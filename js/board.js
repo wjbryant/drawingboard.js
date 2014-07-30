@@ -408,24 +408,33 @@ DrawingBoard.Board.prototype = {
 
 		this.ev.unbind('board:startDrawing', $.proxy(this.fill, this));
 
-		if (this.opts.eraserColor === "transparent")
-			this.ctx.globalCompositeOperation = newMode === "eraser" ? "destination-out" : "source-over";
-		else {
-			if (newMode === "eraser") {
-				if (this.opts.eraserColor === "background" && DrawingBoard.Utils.isColor(this.opts.background))
-					this.ctx.strokeStyle = this.opts.background;
-				else if (DrawingBoard.Utils.isColor(this.opts.eraserColor))
-					this.ctx.strokeStyle = this.opts.eraserColor;
-			} else if (!this.mode || this.mode === "eraser") {
-				this.ctx.strokeStyle = this.color;
-			}
+		if (newMode === "eraser") {
+			if (this.opts.eraserColor === "transparent") {
+				this.ctx.globalCompositeOperation = "destination-out";
+			} else {
+				this.ctx.globalCompositeOperation = "source-over";
 
-			if (newMode === "filler")
-				this.ev.bind('board:startDrawing', $.proxy(this.fill, this));
+				if (this.opts.eraserColor === "background" && DrawingBoard.Utils.isColor(this.opts.background)) {
+					this.ctx.strokeStyle = this.opts.background;
+				} else if (DrawingBoard.Utils.isColor(this.opts.eraserColor)) {
+					this.ctx.strokeStyle = this.opts.eraserColor;
+				}
+			}
+		} else if (newMode === 'highlighter') {
+			this.ctx.globalCompositeOperation = 'darker';
+			this.ctx.strokeStyle = this.color;
+		} else if (newMode === "filler") {
+			this.ev.bind('board:startDrawing', $.proxy(this.fill, this));
+		} else {
+			this.ctx.globalCompositeOperation = "source-over";
+			this.ctx.strokeStyle = this.color;
 		}
+
 		this.mode = newMode;
-		if (!silent)
+
+		if (!silent) {
 			this.ev.trigger('board:mode', this.mode);
+		}
 	},
 
 	getMode: function() {
