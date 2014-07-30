@@ -124,7 +124,7 @@ DrawingBoard.Board.prototype = {
 
 		this.ctx.lineCap = "round";
 		this.ctx.lineJoin = "round";
-		// this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.width);
+		// this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
 		if (opts.webStorage) this.saveWebStorage();
 
@@ -141,7 +141,7 @@ DrawingBoard.Board.prototype = {
 		var bgIsColor = DrawingBoard.Utils.isColor(background);
 		var prevMode = this.getMode();
 		this.setMode('pencil');
-		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.width);
+		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 		if (bgIsColor) {
 			this.ctx.fillStyle = background;
 			this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
@@ -311,7 +311,7 @@ DrawingBoard.Board.prototype = {
 		var oldGCO = ctx.globalCompositeOperation;
 		img.onload = function() {
 			ctx.globalCompositeOperation = "source-over";
-			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.width);
+			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 			ctx.drawImage(img, 0, 0);
 			ctx.globalCompositeOperation = oldGCO;
 		};
@@ -453,7 +453,7 @@ DrawingBoard.Board.prototype = {
 	 */
 	fill: function(e) {
 		if (this.getImg() === this.blankCanvas) {
-			this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.width);
+			this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 			this.ctx.fillStyle = this.color;
 			this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 			return;
