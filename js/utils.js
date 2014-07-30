@@ -43,7 +43,7 @@ DrawingBoard.Utils.tpl = (function(){
 	};
 }());
 
-/**
+/*!
  * https://github.com/jeromeetienne/microevent.js
  * MicroEvent - to make any js object an event emitter (server or browser)
  *

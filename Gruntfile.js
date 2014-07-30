@@ -6,7 +6,7 @@ module.exports = function(grunt) {
 	grunt.initConfig({
 		bwr: grunt.file.readJSON('bower.json'),
 		meta: {
-			banner: "/* <%= bwr.name %> v<%= bwr.version %> - https://github.com/Leimi/drawingboard.js\n" +
+			banner: "/*! <%= bwr.name %> v<%= bwr.version %> - https://github.com/Leimi/drawingboard.js\n" +
 			"* Copyright (c) <%= grunt.template.today('yyyy') %> Emmanuel Pelletier\n" +
 			'* Licensed MIT */\n'
 		},
