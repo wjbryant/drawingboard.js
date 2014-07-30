@@ -78,6 +78,7 @@ DrawingBoard.Board.defaultOpts = {
 	color: "#000000",
 	size: 1,
 	background: "#fff",
+	opacity: 100,
 	eraserColor: "background",
 	fillTolerance: 100,
 	webStorage: 'session',
@@ -518,6 +519,34 @@ DrawingBoard.Board.prototype = {
 		this.coords.old = this.coords.current = this.coords.oldMid = { x: 0, y: 0 };
 
 		this.dom.$canvas.on('mousedown touchstart', $.proxy(function(e) {
+			var currMode = this.getMode(),
+				opacityVal;
+
+			if ((currMode === 'pencil' || currMode === 'filler') &&
+				typeof this.opacity === 'number' && this.opacity < 100) {
+
+				if (this.opacity < 0) {
+					this.opacity = 0;
+				}
+
+				opacityVal = this.opacity / 100;
+
+				// copy canvas data to a new canvas element and put it underneath
+				this.bgCanvas = document.createElement('canvas');
+				this.bgCanvas.className = 'drawing-board-background-canvas';
+				this.bgCanvas.width = this.canvas.width;
+				this.bgCanvas.height = this.canvas.height;
+				this.canvas.parentNode.appendChild(this.bgCanvas);
+
+				this.bgCtx = this.bgCanvas.getContext('2d');
+				this.bgCtx.drawImage(this.canvas, 0, 0);
+				this.bgCtx.globalAlpha = opacityVal;
+
+				// clear the canvas so the background canvas shows through
+				this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+				this.canvas.style.opacity = opacityVal;
+			}
+
 			this._onInputStart(e, this._getInputCoords(e) );
 		}, this));
 
@@ -530,6 +559,19 @@ DrawingBoard.Board.prototype = {
 		}, this));
 
 		this.dom.$canvas.on('mouseup touchend', $.proxy(function(e) {
+			if (this.bgCanvas) {
+				// merge the layers (globalAlpha is set on mousedown)
+				this.bgCtx.drawImage(this.canvas, 0, 0);
+				this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+				this.ctx.drawImage(this.bgCanvas, 0, 0);
+				this.canvas.style.opacity = 1;
+
+				// remove the background canvas
+				this.canvas.parentNode.removeChild(this.bgCanvas);
+				delete this.bgCtx;
+				delete this.bgCanvas;
+			}
+
 			this._onInputStop(e, this._getInputCoords(e) );
 		}, this));
 
