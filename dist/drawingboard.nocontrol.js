@@ -1,4 +1,4 @@
-/* drawingboard.js v0.4.4 - https://github.com/Leimi/drawingboard.js
+/*! drawingboard.js v0.5.0a1 - https://github.com/Leimi/drawingboard.js
 * Copyright (c) 2014 Emmanuel Pelletier
 * Licensed MIT */
 window.DrawingBoard = typeof DrawingBoard !== "undefined" ? DrawingBoard : {};
@@ -46,7 +46,7 @@ DrawingBoard.Utils.tpl = (function(){
 	};
 }());
 
-/**
+/*!
  * https://github.com/jeromeetienne/microevent.js
  * MicroEvent - to make any js object an event emitter (server or browser)
  *
@@ -248,6 +248,7 @@ DrawingBoard.Board.defaultOpts = {
 	color: "#000000",
 	size: 1,
 	background: "#fff",
+	opacity: 100,
 	eraserColor: "background",
 	fillTolerance: 100,
 	webStorage: 'session',
@@ -294,7 +295,7 @@ DrawingBoard.Board.prototype = {
 
 		this.ctx.lineCap = "round";
 		this.ctx.lineJoin = "round";
-		// this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.width);
+		// this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
 		if (opts.webStorage) this.saveWebStorage();
 
@@ -311,7 +312,7 @@ DrawingBoard.Board.prototype = {
 		var bgIsColor = DrawingBoard.Utils.isColor(background);
 		var prevMode = this.getMode();
 		this.setMode('pencil');
-		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.width);
+		this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 		if (bgIsColor) {
 			this.ctx.fillStyle = background;
 			this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
@@ -481,7 +482,7 @@ DrawingBoard.Board.prototype = {
 		var oldGCO = ctx.globalCompositeOperation;
 		img.onload = function() {
 			ctx.globalCompositeOperation = "source-over";
-			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.width);
+			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 			ctx.drawImage(img, 0, 0);
 			ctx.globalCompositeOperation = oldGCO;
 		};
@@ -577,24 +578,33 @@ DrawingBoard.Board.prototype = {
 
 		this.ev.unbind('board:startDrawing', $.proxy(this.fill, this));
 
-		if (this.opts.eraserColor === "transparent")
-			this.ctx.globalCompositeOperation = newMode === "eraser" ? "destination-out" : "source-over";
-		else {
-			if (newMode === "eraser") {
-				if (this.opts.eraserColor === "background" && DrawingBoard.Utils.isColor(this.opts.background))
-					this.ctx.strokeStyle = this.opts.background;
-				else if (DrawingBoard.Utils.isColor(this.opts.eraserColor))
-					this.ctx.strokeStyle = this.opts.eraserColor;
-			} else if (!this.mode || this.mode === "eraser") {
-				this.ctx.strokeStyle = this.color;
-			}
+		if (newMode === "eraser") {
+			if (this.opts.eraserColor === "transparent") {
+				this.ctx.globalCompositeOperation = "destination-out";
+			} else {
+				this.ctx.globalCompositeOperation = "source-over";
 
-			if (newMode === "filler")
-				this.ev.bind('board:startDrawing', $.proxy(this.fill, this));
+				if (this.opts.eraserColor === "background" && DrawingBoard.Utils.isColor(this.opts.background)) {
+					this.ctx.strokeStyle = this.opts.background;
+				} else if (DrawingBoard.Utils.isColor(this.opts.eraserColor)) {
+					this.ctx.strokeStyle = this.opts.eraserColor;
+				}
+			}
+		} else if (newMode === 'highlighter') {
+			this.ctx.globalCompositeOperation = 'darker';
+			this.ctx.strokeStyle = this.color;
+		} else if (newMode === "filler") {
+			this.ev.bind('board:startDrawing', $.proxy(this.fill, this));
+		} else {
+			this.ctx.globalCompositeOperation = "source-over";
+			this.ctx.strokeStyle = this.color;
 		}
+
 		this.mode = newMode;
-		if (!silent)
+
+		if (!silent) {
 			this.ev.trigger('board:mode', this.mode);
+		}
 	},
 
 	getMode: function() {
@@ -623,7 +633,7 @@ DrawingBoard.Board.prototype = {
 	 */
 	fill: function(e) {
 		if (this.getImg() === this.blankCanvas) {
-			this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.width);
+			this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 			this.ctx.fillStyle = this.color;
 			this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 			return;
@@ -688,6 +698,34 @@ DrawingBoard.Board.prototype = {
 		this.coords.old = this.coords.current = this.coords.oldMid = { x: 0, y: 0 };
 
 		this.dom.$canvas.on('mousedown touchstart', $.proxy(function(e) {
+			var currMode = this.getMode(),
+				opacityVal;
+
+			if ((currMode === 'pencil' || currMode === 'filler') &&
+				typeof this.opacity === 'number' && this.opacity < 100) {
+
+				if (this.opacity < 0) {
+					this.opacity = 0;
+				}
+
+				opacityVal = this.opacity / 100;
+
+				// copy canvas data to a new canvas element and put it underneath
+				this.bgCanvas = document.createElement('canvas');
+				this.bgCanvas.className = 'drawing-board-background-canvas';
+				this.bgCanvas.width = this.canvas.width;
+				this.bgCanvas.height = this.canvas.height;
+				this.canvas.parentNode.appendChild(this.bgCanvas);
+
+				this.bgCtx = this.bgCanvas.getContext('2d');
+				this.bgCtx.drawImage(this.canvas, 0, 0);
+				this.bgCtx.globalAlpha = opacityVal;
+
+				// clear the canvas so the background canvas shows through
+				this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+				this.canvas.style.opacity = opacityVal;
+			}
+
 			this._onInputStart(e, this._getInputCoords(e) );
 		}, this));
 
@@ -700,6 +738,19 @@ DrawingBoard.Board.prototype = {
 		}, this));
 
 		this.dom.$canvas.on('mouseup touchend', $.proxy(function(e) {
+			if (this.bgCanvas) {
+				// merge the layers (globalAlpha is set on mousedown)
+				this.bgCtx.drawImage(this.canvas, 0, 0);
+				this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+				this.ctx.drawImage(this.bgCanvas, 0, 0);
+				this.canvas.style.opacity = 1;
+
+				// remove the background canvas
+				this.canvas.parentNode.removeChild(this.bgCanvas);
+				delete this.bgCtx;
+				delete this.bgCanvas;
+			}
+
 			this._onInputStop(e, this._getInputCoords(e) );
 		}, this));
 
