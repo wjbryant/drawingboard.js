@@ -531,9 +531,7 @@ DrawingBoard.Board.prototype = {
 			var currMode = this.getMode(),
 				opacityVal;
 
-			if ((currMode === 'pencil' || currMode === 'filler') &&
-				typeof this.opacity === 'number' && this.opacity < 100) {
-
+			if (currMode === 'pencil' && typeof this.opacity === 'number' && this.opacity < 100) {
 				if (this.opacity < 0) {
 					this.opacity = 0;
 				}
