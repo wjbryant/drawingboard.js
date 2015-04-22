@@ -421,7 +421,11 @@ DrawingBoard.Board.prototype = {
 				}
 			}
 		} else if (newMode === 'highlighter') {
-			this.ctx.globalCompositeOperation = 'darker';
+			// use "darken" if supported and fall back to "darker"
+			this.ctx.globalCompositeOperation = 'darken';
+			if (this.ctx.globalCompositeOperation !== 'darken') {
+				this.ctx.globalCompositeOperation = 'darker';
+			}
 			this.ctx.strokeStyle = this.color;
 		} else if (newMode === "filler") {
 			this.ev.bind('board:startDrawing', $.proxy(this.fill, this));
