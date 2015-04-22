@@ -1,5 +1,5 @@
 /*! drawingboard.js v0.5.0a1 - https://github.com/Leimi/drawingboard.js
-* Copyright (c) 2014 Emmanuel Pelletier
+* Copyright (c) 2015 Emmanuel Pelletier
 * Licensed MIT */
 window.DrawingBoard = typeof DrawingBoard !== "undefined" ? DrawingBoard : {};
 
@@ -591,7 +591,11 @@ DrawingBoard.Board.prototype = {
 				}
 			}
 		} else if (newMode === 'highlighter') {
-			this.ctx.globalCompositeOperation = 'darker';
+			// use "darken" if supported and fall back to "darker"
+			this.ctx.globalCompositeOperation = 'darken';
+			if (this.ctx.globalCompositeOperation !== 'darken') {
+				this.ctx.globalCompositeOperation = 'darker';
+			}
 			this.ctx.strokeStyle = this.color;
 		} else if (newMode === "filler") {
 			this.ev.bind('board:startDrawing', $.proxy(this.fill, this));
